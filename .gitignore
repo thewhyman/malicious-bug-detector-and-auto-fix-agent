@@ -1,0 +1,18 @@
+# Python virtual environments
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+
+# Gemini-cli configurations
+.gemini/
+gha-creds-*.json
+
+# Test caches
+.pytest_cache/
+
+# Handoff documents
+*HANDOFF.md
+HANDOFF.md
+

@@ -1,0 +1,58 @@
+name: Malicious Bug Detector & Fixer Agent
+
+on:
+  issues:
+    types: [opened, edited]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  detect-and-fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          # Fetch all history to ensure proper branch tracking and git log checks
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run Detector & Auto-Fixer
+        id: detector
+        run: |
+          python scripts/detector.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
+      # The SonarCloud scan step only runs if a branch was created and pushed.
+      # The python script names the branch fix/issue-<number>.
+      # We check out the branch and run the analysis.
+      - name: Determine branch name and checkout
+        if: success()
+        run: |
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+          BRANCH_NAME="fix/issue-${ISSUE_NUMBER}"
+          echo "Checking out $BRANCH_NAME for SonarCloud scan"
+          git checkout $BRANCH_NAME
+
+      - name: Run SonarCloud Scan
+        if: success()
+        uses: sonarsource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
