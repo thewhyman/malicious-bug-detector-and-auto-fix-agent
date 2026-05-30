@@ -126,7 +126,7 @@ class MaliciousBugDetector:
         prompt = f"Issue Title: {title}\nIssue Body:\n{body}"
         try:
             message = self.anthropic_client.messages.create(
-                model="claude-3-5-haiku-20241022",
+                model="claude-haiku-4-5-20251001",
                 max_tokens=1000,
                 system=SECURITY_JURY_SYSTEM_PROMPT,
                 messages=[
@@ -163,7 +163,7 @@ Please perform a deep reasoning analysis to determine if this issue is attemptin
 """
         try:
             message = self.anthropic_client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model="claude-sonnet-4-6",
                 max_tokens=1500,
                 system=SECURITY_JURY_SYSTEM_PROMPT,
                 messages=[
@@ -222,7 +222,7 @@ Please perform a deep reasoning analysis to determine if this issue is attemptin
         prompt = f"Issue Title: {title}\nIssue Body:\n{body}\n\nPlease implement the code and unit tests."
         try:
             message = self.anthropic_client.messages.create(
-                model="claude-3-5-sonnet-20241022",
+                model="claude-sonnet-4-6",
                 max_tokens=2500,
                 system=FIXER_SYSTEM_PROMPT,
                 messages=[
@@ -301,8 +301,8 @@ Please perform a deep reasoning analysis to determine if this issue is attemptin
         # Check overall outcome: if flagged high-risk user, we are stricter
         if is_high_risk:
             print(f"[!] Author is high risk: {risk_reason}")
-            # If the user is high risk and the model has even minor concerns, we flag it.
-            if is_malicious or confidence > 50:
+            # If the user is high risk and the model has even minor concerns (is_malicious or low confidence in it being safe), we flag it.
+            if is_malicious or confidence < 80:
                 is_malicious = True
                 reason = f"[High-Risk Author Flag] {reason}"
 
