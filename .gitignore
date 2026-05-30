@@ -16,3 +16,7 @@ gha-creds-*.json
 *HANDOFF.md
 HANDOFF.md
 
+# Mock events for local testing
+mock_event.json
+
+
