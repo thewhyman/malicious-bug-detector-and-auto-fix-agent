@@ -51,11 +51,21 @@ jobs:
           git checkout $BRANCH_NAME
 
       - name: Run SonarCloud Scan
+        id: sonar
         if: success()
         uses: sonarsource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Flag Issue on Sonar Failure
+        if: failure() && steps.sonar.outcome == 'failure'
+        run: |
+          gh issue comment ${{ github.event.issue.number }} \
+            --body "⚠️ **Security Scan Failed**: The SonarCloud static analysis failed on the generated fix branch. This issue may contain a vulnerability vector or coding policy violation. Pull Request creation aborted."
+          gh issue edit ${{ github.event.issue.number }} --add-label "security-risk"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Pull Request
         if: success()
