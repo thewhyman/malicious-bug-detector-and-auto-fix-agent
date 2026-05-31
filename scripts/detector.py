@@ -362,14 +362,13 @@ Please perform a deep reasoning analysis to determine if this issue is attemptin
                 "body": f"🤖 **Automated Fix Verification Failed**:\n\nThe agent generated a fix, but the generated tests failed verification. Verification logs:\n```\n{test_result.stdout[:500]}\n```"
             }
             requests.post(comment_url, headers=self.headers, json=comment_body)
-            sys.exit(0)
+            sys.exit(1)
             
         print("[+] Unit tests passed successfully!")
         
         # Create branch and push
         branch_name = f"fix/issue-{issue_number}"
-        if self.execute_git_commands(branch_name, issue_number):
-            self.create_pull_request(branch_name, issue_number, title)
+        self.execute_git_commands(branch_name, issue_number)
             
 if __name__ == "__main__":
     if not os.path.exists("scripts"):
