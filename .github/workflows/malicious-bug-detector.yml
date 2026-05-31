@@ -63,10 +63,13 @@ jobs:
         run: |
           ISSUE_NUMBER="${{ github.event.issue.number }}"
           BRANCH_NAME="fix/issue-${ISSUE_NUMBER}"
-          echo "Fetching SonarCloud quality gate status for branch $BRANCH_NAME"
+          
+          # URL-encode the branch name for the SonarCloud API query
+          ENCODED_BRANCH=$(jq -rn --arg str "$BRANCH_NAME" '$str | @uri')
+          echo "Fetching SonarCloud quality gate status for branch $BRANCH_NAME (encoded: $ENCODED_BRANCH)"
           
           # Fetch quality gate status from SonarCloud API
-          SONAR_STATUS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=thewhyman_malicious-bug-detector-and-auto-fix-agent&branch=${BRANCH_NAME}")
+          SONAR_STATUS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=thewhyman_malicious-bug-detector-and-auto-fix-agent&branch=${ENCODED_BRANCH}")
           echo "SonarCloud API response: $SONAR_STATUS"
           
           # Extract failed conditions using jq
@@ -78,7 +81,7 @@ jobs:
           echo "**SonarCloud Quality Gate Failures:**" >> comment_body.md
           echo "${FAILED_CONDITIONS:-*(Unable to retrieve detailed condition metrics or none found)*}" >> comment_body.md
           echo "" >> comment_body.md
-          echo "You can view the full security report on the **[SonarCloud Dashboard](https://sonarcloud.io/dashboard?id=thewhyman_malicious-bug-detector-and-auto-fix-agent&branch=${BRANCH_NAME})**." >> comment_body.md
+          echo "You can view the full security report on the **[SonarCloud Dashboard](https://sonarcloud.io/dashboard?id=thewhyman_malicious-bug-detector-and-auto-fix-agent&branch=${ENCODED_BRANCH})**." >> comment_body.md
           echo "" >> comment_body.md
           echo "Pull Request creation has been blocked." >> comment_body.md
           
