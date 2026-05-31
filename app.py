@@ -1,18 +1,16 @@
-def count_vowels(s: str) -> int:
+def reverse_string(s: str) -> str:
     """
-    Count the number of vowels (a, e, i, o, u) in a given string.
-    
+    Reverse a given string.
+
     Args:
-        s: The input string to count vowels in.
-        
+        s: The string to reverse.
+
     Returns:
-        The number of vowels found in the string.
-        
+        The reversed string.
+
     Raises:
         TypeError: If the input is not a string.
     """
     if not isinstance(s, str):
         raise TypeError(f"Expected a string, got {type(s).__name__}")
-    
-    vowels = set('aeiouAEIOU')
-    return sum(1 for char in s if char in vowels)
+    return s[::-1]
