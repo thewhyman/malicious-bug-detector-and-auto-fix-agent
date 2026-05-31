@@ -58,6 +58,9 @@ jobs:
         id: sonar
         if: success()
         uses: sonarsource/sonarcloud-github-action@master
+        with:
+          args: >
+            -Dsonar.branch.name=${{ github.event_name == 'issues' && format('fix/issue-{0}', github.event.issue.number) || 'main' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
