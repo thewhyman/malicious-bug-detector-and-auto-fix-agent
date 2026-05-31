@@ -226,7 +226,7 @@ Please perform a deep reasoning analysis to determine if this issue is attemptin
         try:
             message = self.anthropic_client.messages.create(
                 model="claude-sonnet-4-6",
-                max_tokens=2500,
+                max_tokens=4000,
                 system=FIXER_SYSTEM_PROMPT,
                 messages=[
                     {"role": "user", "content": prompt}
@@ -242,6 +242,14 @@ Please perform a deep reasoning analysis to determine if this issue is attemptin
             for name, content in matches:
                 files[name] = content.strip()
                 
+            # Fallback for unclosed tags (e.g., if response was truncated)
+            if "app.py" not in files or "test_app.py" not in files:
+                unclosed_pattern = r'<file\s+name="([^"]+)"\s*>(.*?)$'
+                unclosed_matches = re.findall(unclosed_pattern, res_text, re.DOTALL)
+                for name, content in unclosed_matches:
+                    if name not in files:
+                        files[name] = content.strip()
+            
             if "app.py" in files and "test_app.py" in files:
                 return {
                     "code": files["app.py"],
