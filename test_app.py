@@ -1,67 +1,77 @@
+import os
+import tempfile
 import pytest
-from app import reverse_string
+
+from app import create_temp_file_path
 
 
-def test_reverse_simple_string():
-    assert reverse_string("hello") == "olleh"
+class TestCreateTempFilePath:
+    """Unit tests for the create_temp_file_path() utility function."""
 
+    def test_returns_string(self):
+        """The function should return a string."""
+        result = create_temp_file_path()
+        assert isinstance(result, str)
 
-def test_reverse_empty_string():
-    assert reverse_string("") == ""
+    def test_path_is_in_temp_directory(self):
+        """The returned path should reside inside the system temp directory."""
+        result = create_temp_file_path()
+        temp_dir = tempfile.gettempdir()
+        # Normalise both paths to handle any symlinks or case differences
+        assert os.path.normcase(os.path.normpath(result)).startswith(
+            os.path.normcase(os.path.normpath(temp_dir))
+        )
 
+    def test_file_does_not_exist(self):
+        """The function must NOT create the file — only generate the path."""
+        result = create_temp_file_path()
+        assert not os.path.exists(result), (
+            f"create_temp_file_path() must not create the file, but '{result}' exists."
+        )
 
-def test_reverse_single_character():
-    assert reverse_string("a") == "a"
+    def test_returns_absolute_path(self):
+        """The returned path should be absolute."""
+        result = create_temp_file_path()
+        assert os.path.isabs(result), f"Expected an absolute path, got: {result}"
 
+    def test_unique_paths(self):
+        """Each call should return a different path."""
+        paths = {create_temp_file_path() for _ in range(100)}
+        assert len(paths) == 100, "Expected 100 unique paths from 100 calls."
 
-def test_reverse_palindrome():
-    assert reverse_string("racecar") == "racecar"
+    def test_path_parent_is_temp_dir(self):
+        """The direct parent directory of the returned path should be the temp dir."""
+        result = create_temp_file_path()
+        temp_dir = tempfile.gettempdir()
+        assert os.path.normcase(os.path.normpath(os.path.dirname(result))) == (
+            os.path.normcase(os.path.normpath(temp_dir))
+        )
 
+    def test_path_is_non_empty(self):
+        """The returned path must not be an empty string."""
+        result = create_temp_file_path()
+        assert result.strip() != ""
 
-def test_reverse_string_with_spaces():
-    assert reverse_string("hello world") == "dlrow olleh"
+    def test_file_can_be_created_at_path(self):
+        """A file can actually be created at the returned path (sanity check)."""
+        result = create_temp_file_path()
+        try:
+            with open(result, "w") as f:
+                f.write("test")
+            assert os.path.exists(result)
+        finally:
+            if os.path.exists(result):
+                os.remove(result)
 
-
-def test_reverse_string_with_special_characters():
-    assert reverse_string("!@#$%") == "%$#@!"
-
-
-def test_reverse_string_with_numbers():
-    assert reverse_string("12345") == "54321"
-
-
-def test_reverse_mixed_case_string():
-    assert reverse_string("HeLLo WoRLd") == "dLRoW oLLeH"
-
-
-def test_reverse_string_with_unicode():
-    assert reverse_string("héllo") == "olléh"
-
-
-def test_reverse_raises_type_error_for_non_string_int():
-    with pytest.raises(TypeError):
-        reverse_string(123)
-
-
-def test_reverse_raises_type_error_for_non_string_list():
-    with pytest.raises(TypeError):
-        reverse_string(["h", "e", "l", "l", "o"])
-
-
-def test_reverse_raises_type_error_for_none():
-    with pytest.raises(TypeError):
-        reverse_string(None)
-
-
-def test_reverse_raises_type_error_for_dict():
-    with pytest.raises(TypeError):
-        reverse_string({"key": "value"})
-
-
-def test_reverse_long_string():
-    long_string = "a" * 10000
-    assert reverse_string(long_string) == long_string
-
-
-def test_reverse_newline_characters():
-    assert reverse_string("line1\nline2") == "2enil\n1enil"
+    def test_no_side_effects_on_temp_dir(self):
+        """Calling the function multiple times should not alter the temp directory."""
+        temp_dir = tempfile.gettempdir()
+        before = set(os.listdir(temp_dir))
+        paths = [create_temp_file_path() for _ in range(10)]
+        after = set(os.listdir(temp_dir))
+        # None of the newly generated filenames should appear in the directory
+        new_entries = after - before
+        generated_names = {os.path.basename(p) for p in paths}
+        assert generated_names.isdisjoint(new_entries), (
+            "create_temp_file_path() must not create any files in the temp directory."
+        )
