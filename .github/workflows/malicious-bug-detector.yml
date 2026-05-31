@@ -3,6 +3,9 @@ name: Malicious Bug Detector & Fixer Agent
 on:
   issues:
     types: [opened, edited]
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
@@ -32,6 +35,7 @@ jobs:
 
       - name: Run Detector & Auto-Fixer
         id: detector
+        if: github.event_name == 'issues'
         run: |
           python scripts/detector.py
         env:
@@ -43,7 +47,7 @@ jobs:
       # The python script names the branch fix/issue-<number>.
       # We check out the branch and run the analysis.
       - name: Determine branch name and checkout
-        if: success()
+        if: success() && github.event_name == 'issues'
         run: |
           ISSUE_NUMBER="${{ github.event.issue.number }}"
           BRANCH_NAME="fix/issue-${ISSUE_NUMBER}"
@@ -59,7 +63,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
       - name: Flag Issue on Sonar Failure
-        if: failure() && steps.sonar.outcome == 'failure'
+        if: failure() && steps.sonar.outcome == 'failure' && github.event_name == 'issues'
         run: |
           ISSUE_NUMBER="${{ github.event.issue.number }}"
           BRANCH_NAME="fix/issue-${ISSUE_NUMBER}"
@@ -91,7 +95,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Pull Request
-        if: success()
+        if: success() && github.event_name == 'issues'
         run: |
           gh pr create \
             --title "fix: Resolve issue #${{ github.event.issue.number }} - ${{ github.event.issue.title }}" \
