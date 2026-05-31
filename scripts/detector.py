@@ -34,12 +34,15 @@ You are a senior software engineer. Your task is to fix a bug described in a Git
 You should write the fixed code in a file named `app.py` and the test case in `test_app.py`.
 Ensure that the code is robust and contains no security vulnerabilities.
 
-Return your response as a JSON object with the following structure:
-{
-  "code": "Complete Python code for app.py",
-  "test": "Complete Python unit tests for test_app.py using pytest"
-}
-Do not return any other text or markdown fences outside this JSON structure.
+Return your response with the files wrapped in XML-like tags as follows:
+<file name="app.py">
+# Complete Python code for app.py
+</file>
+
+<file name="test_app.py">
+# Complete Python unit tests for test_app.py using pytest
+</file>
+Do not return any other text outside these file blocks.
 """
 
 def get_env_var(name, default=None, required=True):
@@ -230,12 +233,22 @@ Please perform a deep reasoning analysis to determine if this issue is attemptin
                 ]
             )
             res_text = message.content[0].text.strip()
-            if res_text.startswith("```json"):
-                res_text = res_text[7:-3]
-            elif res_text.startswith("```"):
-                res_text = res_text[3:-3]
-            data = json.loads(res_text.strip())
-            return data
+            
+            import re
+            pattern = r'<file\s+name="([^"]+)"\s*>(.*?)</file>'
+            matches = re.findall(pattern, res_text, re.DOTALL)
+            
+            files = {}
+            for name, content in matches:
+                files[name] = content.strip()
+                
+            if "app.py" in files and "test_app.py" in files:
+                return {
+                    "code": files["app.py"],
+                    "test": files["test_app.py"]
+                }
+            print(f"[!] XML parsing failed to locate app.py or test_app.py in response: {res_text[:500]}")
+            return None
         except Exception as e:
             print(f"[!] Generating fix failed: {e}")
             return None
