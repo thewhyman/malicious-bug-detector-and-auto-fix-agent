@@ -58,9 +58,6 @@ jobs:
         id: sonar
         if: success()
         uses: sonarsource/sonarcloud-github-action@master
-        with:
-          args: >
-            -Dsonar.branch.name=${{ github.event_name == 'issues' && format('fix/issue-{0}', github.event.issue.number) || 'main' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
@@ -69,14 +66,9 @@ jobs:
         if: failure() && steps.sonar.outcome == 'failure' && github.event_name == 'issues'
         run: |
           ISSUE_NUMBER="${{ github.event.issue.number }}"
-          BRANCH_NAME="fix/issue-${ISSUE_NUMBER}"
           
-          # URL-encode the branch name for the SonarCloud API query
-          ENCODED_BRANCH=$(jq -rn --arg str "$BRANCH_NAME" '$str | @uri')
-          echo "Fetching SonarCloud quality gate status for branch $BRANCH_NAME (encoded: $ENCODED_BRANCH)"
-          
-          # Fetch quality gate status from SonarCloud API
-          SONAR_STATUS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=thewhyman_malicious-bug-detector-and-auto-fix-agent&branch=${ENCODED_BRANCH}")
+          # Fetch quality gate status from SonarCloud API (using main branch baseline)
+          SONAR_STATUS=$(curl -s -u "${{ secrets.SONAR_TOKEN }}:" "https://sonarcloud.io/api/qualitygates/project_status?projectKey=thewhyman_malicious-bug-detector-and-auto-fix-agent")
           echo "SonarCloud API response: $SONAR_STATUS"
           
           # Extract failed conditions using jq
@@ -88,7 +80,7 @@ jobs:
           echo "**SonarCloud Quality Gate Failures:**" >> comment_body.md
           echo "${FAILED_CONDITIONS:-*(Unable to retrieve detailed condition metrics or none found)*}" >> comment_body.md
           echo "" >> comment_body.md
-          echo "You can view the full security report on the **[SonarCloud Dashboard](https://sonarcloud.io/dashboard?id=thewhyman_malicious-bug-detector-and-auto-fix-agent&branch=${ENCODED_BRANCH})**." >> comment_body.md
+          echo "You can view the full security report on the **[SonarCloud Dashboard](https://sonarcloud.io/dashboard?id=thewhyman_malicious-bug-detector-and-auto-fix-agent)**." >> comment_body.md
           echo "" >> comment_body.md
           echo "Pull Request creation has been blocked." >> comment_body.md
           
