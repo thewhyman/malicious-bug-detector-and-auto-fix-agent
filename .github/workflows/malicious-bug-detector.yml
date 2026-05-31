@@ -73,16 +73,14 @@ jobs:
           FAILED_CONDITIONS=$(echo "$SONAR_STATUS" | jq -r '.projectStatus.conditions[] | select(.status == "ERROR") | "- **\(.metricKey)**: \(.actualValue) (Threshold: \(.comparator) \(.errorThreshold))"')
           
           # Construct comment body
-          cat <<EOF > comment_body.md
-⚠️ **Security Scan Failed**: The SonarCloud static analysis failed on the generated fix branch.
-
-**SonarCloud Quality Gate Failures:**
-${FAILED_CONDITIONS:-*(Unable to retrieve detailed condition metrics or none found)*}
-
-You can view the full security report on the **[SonarCloud Dashboard](https://sonarcloud.io/dashboard?id=thewhyman_malicious-bug-detector-and-auto-fix-agent&branch=${BRANCH_NAME})**.
-
-Pull Request creation has been blocked.
-EOF
+          echo "⚠️ **Security Scan Failed**: The SonarCloud static analysis failed on the generated fix branch." > comment_body.md
+          echo "" >> comment_body.md
+          echo "**SonarCloud Quality Gate Failures:**" >> comment_body.md
+          echo "${FAILED_CONDITIONS:-*(Unable to retrieve detailed condition metrics or none found)*}" >> comment_body.md
+          echo "" >> comment_body.md
+          echo "You can view the full security report on the **[SonarCloud Dashboard](https://sonarcloud.io/dashboard?id=thewhyman_malicious-bug-detector-and-auto-fix-agent&branch=${BRANCH_NAME})**." >> comment_body.md
+          echo "" >> comment_body.md
+          echo "Pull Request creation has been blocked." >> comment_body.md
           
           gh issue comment $ISSUE_NUMBER -F comment_body.md
           gh issue edit $ISSUE_NUMBER --add-label "security-risk"
